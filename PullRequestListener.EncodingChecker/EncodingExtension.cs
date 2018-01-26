@@ -10,7 +10,7 @@ namespace PullRequestListener.EncodingChecker
 {
     public static class EncodingExtension
     {
-        public static bool IsOfEncoding(this Encoding encoding, Stream stream, bool? BOMAllowed = null)
+        public static bool IsOfEncoding(this Encoding encoding, Stream stream, bool? ByteOrderMarkAllowed = null)
         {
             if (!stream.CanSeek)
             {
@@ -25,28 +25,34 @@ namespace PullRequestListener.EncodingChecker
             stream.Seek(0, SeekOrigin.Begin);
             byte[] originalBytes;
             byte[] comparisonBytes;
-            byte[] headerBytes;
+            byte[] headerBytes = new byte[4];
 
             using (MemoryStream originalStream = new MemoryStream())
             {
+                if (stream.Length > 4)
+                {
+                    for (int i = 0; i < 4; i++)
+                    {
+                        headerBytes[i] = Convert.ToByte(stream.ReadByte());
+                    }
+                }
 
+                if (ByteOrderMarkAllowed.HasValue)
+                {
+                    if (ByteOrderMarkAllowed.Value && encoding == Encoding.ASCII)
+                    {
+                        throw new Exception("ACSII does not have a Byte Order Mark (BOM)");
+                    }
+                    if (HasByteOrderMark(headerBytes) == !ByteOrderMarkAllowed)
+                    {
+                        return false;
+                    }
+                }
+                stream.Seek(0, SeekOrigin.Begin);
                 stream.CopyTo(originalStream);
                 originalBytes = originalStream.ToArray();
             }
 
-            headerBytes = originalBytes.Take(5).ToArray();
-
-            if (BOMAllowed.HasValue)
-            {
-                if (BOMAllowed.Value && encoding == Encoding.ASCII)
-                {
-                    throw new Exception("ACSII does not have a BOM");
-                }
-                if (HasBOM(headerBytes) == !BOMAllowed)
-                {
-                    return false;
-                }
-            }
             foreach (EncodingInfo comparisonEncodingInfo in Encoding.GetEncodings())
             {
                 Encoding comparisonEncoding = comparisonEncodingInfo.GetEncoding();
@@ -60,7 +66,7 @@ namespace PullRequestListener.EncodingChecker
             }
             return false;
         }
-        private static bool HasBOM(byte[] bytes)
+        private static bool HasByteOrderMark(byte[] bytes)
         {
             if (bytes[0] == 239 && bytes[1] == 187 && bytes[2] == 191) //UTF8 BOM - EE BB FF
             {
