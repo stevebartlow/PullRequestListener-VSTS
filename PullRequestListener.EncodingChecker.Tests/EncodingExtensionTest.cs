@@ -16,17 +16,42 @@ namespace PullRequestListener.EncodingChecker.Tests
         [TestMethod]
         public void CompareUTF8File()
         {
-
             bool compare = Encoding.UTF8.isOfEncoding(GetResource("PullRequestListener.EncodingChecker.Tests.TestFiles.UTF-8.txt"));
             compare.Should().BeTrue();
         }
-        
+        [TestMethod]
+        public void CompareANSIFile()
+        {
+            bool compare = Encoding.ASCII.isOfEncoding(GetResource("PullRequestListener.EncodingChecker.Tests.TestFiles.ANSI.txt"));
+            compare.Should().BeTrue();
+        }
+
+
         [TestMethod]
         public void FailUTF8File()
         {
             bool compare = Encoding.UTF32.isOfEncoding(GetResource("PullRequestListener.EncodingChecker.Tests.TestFiles.UTF-8.txt"));
             compare.Should().BeFalse();
         }
+        [TestMethod]
+        public void Fail16LEBOMFile()
+        {
+            bool compare = Encoding.UTF8.isOfEncoding(GetResource("PullRequestListener.EncodingChecker.Tests.TestFiles.UTF-16 LE BOM.txt"));
+            compare.Should().BeFalse();
+        }
+        [TestMethod]
+        public void Fail16BEBOMFile()
+        {
+            bool compare = Encoding.UTF8.isOfEncoding(GetResource("PullRequestListener.EncodingChecker.Tests.TestFiles.UTF-16 BE BOM.txt"));
+            compare.Should().BeFalse();
+        }
+        [TestMethod]
+        public void FailANSIFile()
+        {
+            bool compare = Encoding.UTF32.isOfEncoding(GetResource("PullRequestListener.EncodingChecker.Tests.TestFiles.ANSI.txt"));
+            compare.Should().BeFalse();
+        }
+
         protected Stream GetResource(string resourceName)
         {
             Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
