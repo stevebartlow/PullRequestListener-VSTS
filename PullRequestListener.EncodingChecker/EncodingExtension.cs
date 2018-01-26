@@ -22,13 +22,20 @@ namespace PullRequestListener.EncodingChecker
             }
 
             HashAlgorithm hashAlgorithm = HMACSHA512.Create();
-            byte[] sourceHash = hashAlgorithm.ComputeHash(stream);
+            
 
             using (MemoryStream memoryStream = new MemoryStream())
+            using (MemoryStream compareStream = new MemoryStream())
             {
                 stream.Seek(0, SeekOrigin.Begin);
+
+                stream.CopyTo(compareStream);
+                byte[] original = compareStream.ToArray();
+                byte[] sourceHash = hashAlgorithm.ComputeHash(original);
+
+                stream.Seek(0, SeekOrigin.Begin);
                 using (StreamReader streamReader = new StreamReader(stream))
-                using (StreamWriter streamWriter = new StreamWriter(memoryStream, encoding))
+                using (StreamWriter streamWriter = new StreamWriter(memoryStream, encoding, 512, true))
                 {
                     while (!streamReader.EndOfStream)
                     {
@@ -37,9 +44,15 @@ namespace PullRequestListener.EncodingChecker
                 }
 
                 memoryStream.Seek(0, SeekOrigin.Begin);
-                byte[] compareHash = hashAlgorithm.ComputeHash(memoryStream);
+                byte[] newEncoding = compareStream.ToArray();
 
-                return Array.Equals(sourceHash, compareHash);
+                memoryStream.Seek(0, SeekOrigin.Begin);
+                byte[] compareHash = hashAlgorithm.ComputeHash(newEncoding);
+
+                bool same = Enumerable.SequenceEqual(original, newEncoding);
+
+
+                return Enumerable.SequenceEqual(sourceHash, compareHash);
             }
         }
     }
