@@ -16,13 +16,13 @@ namespace PullRequestListener.EncodingChecker.Tests
         [TestMethod]
         public void CompareUTF8File()
         {
-            bool compare = Encoding.UTF8.isOfEncoding(GetResource("PullRequestListener.EncodingChecker.Tests.TestFiles.UTF-8.txt"));
+            bool compare = Encoding.UTF8.IsOfEncoding(GetResource("PullRequestListener.EncodingChecker.Tests.TestFiles.UTF-8.txt"), false);
             compare.Should().BeTrue();
         }
         [TestMethod]
         public void CompareANSIFile()
         {
-            bool compare = Encoding.ASCII.isOfEncoding(GetResource("PullRequestListener.EncodingChecker.Tests.TestFiles.ANSI.txt"));
+            bool compare = Encoding.ASCII.IsOfEncoding(GetResource("PullRequestListener.EncodingChecker.Tests.TestFiles.ANSI.txt"), false);
             compare.Should().BeTrue();
         }
 
@@ -30,25 +30,25 @@ namespace PullRequestListener.EncodingChecker.Tests
         [TestMethod]
         public void FailUTF8File()
         {
-            bool compare = Encoding.UTF32.isOfEncoding(GetResource("PullRequestListener.EncodingChecker.Tests.TestFiles.UTF-8.txt"));
+            bool compare = Encoding.UTF32.IsOfEncoding(GetResource("PullRequestListener.EncodingChecker.Tests.TestFiles.UTF-8.txt"), true);
             compare.Should().BeFalse();
         }
         [TestMethod]
         public void Fail16LEBOMFile()
         {
-            bool compare = Encoding.UTF8.isOfEncoding(GetResource("PullRequestListener.EncodingChecker.Tests.TestFiles.UTF-16 LE BOM.txt"));
+            bool compare = Encoding.UTF8.IsOfEncoding(GetResource("PullRequestListener.EncodingChecker.Tests.TestFiles.UTF-16 LE BOM.txt"), false);
             compare.Should().BeFalse();
         }
         [TestMethod]
         public void Fail16BEBOMFile()
         {
-            bool compare = Encoding.UTF8.isOfEncoding(GetResource("PullRequestListener.EncodingChecker.Tests.TestFiles.UTF-16 BE BOM.txt"));
+            bool compare = Encoding.UTF8.IsOfEncoding(GetResource("PullRequestListener.EncodingChecker.Tests.TestFiles.UTF-16 BE BOM.txt"), false);
             compare.Should().BeFalse();
         }
         [TestMethod]
         public void FailANSIFile()
         {
-            bool compare = Encoding.UTF32.isOfEncoding(GetResource("PullRequestListener.EncodingChecker.Tests.TestFiles.ANSI.txt"));
+            bool compare = Encoding.UTF8.IsOfEncoding(GetResource("PullRequestListener.EncodingChecker.Tests.TestFiles.UTF-8 BOM.txt"), false);
             compare.Should().BeFalse();
         }
 
