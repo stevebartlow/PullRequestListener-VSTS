@@ -12,29 +12,20 @@ namespace PullRequestListener.EncodingChecker
     {
         public static bool IsOfEncoding(this Encoding encoding, Stream stream, bool? ByteOrderMarkAllowed = null)
         {
-            if (!stream.CanSeek)
-            {
-                throw new Exception("Seekable stream is required");
-            }
             if (!stream.CanRead)
             {
                 throw new Exception("Readable stream is required");
             }
 
-
-            stream.Seek(0, SeekOrigin.Begin);
             byte[] originalBytes;
             byte[] comparisonBytes;
             byte[] headerBytes = new byte[4];
 
             using (MemoryStream originalStream = new MemoryStream())
             {
-                if (stream.Length > 4)
+                for (int i = 0; i < 4; i++)
                 {
-                    for (int i = 0; i < 4; i++)
-                    {
-                        headerBytes[i] = Convert.ToByte(stream.ReadByte());
-                    }
+                    headerBytes[i] = Convert.ToByte(stream.ReadByte());
                 }
 
                 if (ByteOrderMarkAllowed.HasValue)
@@ -48,9 +39,8 @@ namespace PullRequestListener.EncodingChecker
                         return false;
                     }
                 }
-                stream.Seek(0, SeekOrigin.Begin);
                 stream.CopyTo(originalStream);
-                originalBytes = originalStream.ToArray();
+                originalBytes = headerBytes.Concat(originalStream.ToArray()).ToArray();
             }
 
             foreach (EncodingInfo comparisonEncodingInfo in Encoding.GetEncodings())
