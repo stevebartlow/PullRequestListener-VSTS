@@ -3,6 +3,7 @@ using Microsoft.TeamFoundation.SourceControl.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi;
 using System;
+using System.Linq;
 using System.Configuration;
 using System.Net;
 using System.Net.Http;
@@ -10,6 +11,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web.Http;
+using System.Collections.Generic;
 
 namespace PullRequestListener.web.Controllers
 {
@@ -17,6 +19,14 @@ namespace PullRequestListener.web.Controllers
     {
         private string CollectionUrl = ConfigurationManager.AppSettings["CollectionUrl"].ToString();
         private string AuthenticationToken = ConfigurationManager.AppSettings["AuthenticationToken"].ToString();
+        private GitHttpClient GitClient
+        {
+            get
+            {
+                VssConnection connection = new VssConnection(new Uri(CollectionUrl), new VssBasicCredential("", AuthenticationToken));
+                return connection.GetClient<GitHttpClient>();
+            }
+        }
 
         public HttpResponseMessage Post()
         {
@@ -40,16 +50,11 @@ namespace PullRequestListener.web.Controllers
             SetPullRequestStatus(repoId, pullRequestId, pullRequestStatus);
 
 
-
-
-            pullRequestStatus.State = GitStatusState.Succeeded;
-            SetPullRequestStatus(repoId, pullRequestId, pullRequestStatus);
-
-
-
+            CheckPullRequestFilesEncoding(repoId, pullRequestId);
             
-            HttpResponseMessage response = Request.CreateResponse(HttpStatusCode.OK, "Received Post");
-            response.Content = new StringContent("Received Post", Encoding.Unicode);
+            
+            HttpResponseMessage response = Request.CreateResponse(HttpStatusCode.OK, "Checking Encoding");
+            response.Content = new StringContent("Checking Encoding", Encoding.Unicode);
             response.Headers.CacheControl = new CacheControlHeaderValue()
             {
                 MaxAge = TimeSpan.FromMinutes(20)
@@ -57,16 +62,32 @@ namespace PullRequestListener.web.Controllers
             return response;
 
         }
+
         private async void SetPullRequestStatus(string repositoryId, int pullRequestId, GitPullRequestStatus pullRequestStatus)
         {
-            VssConnection connection = new VssConnection(new Uri(CollectionUrl), new VssBasicCredential("", AuthenticationToken));
-            
-            GitHttpClient gitClient = connection.GetClient<GitHttpClient>();
-            GitRepository gitRepository = await gitClient.GetRepositoryAsync(repositoryId);
-            GitPullRequest pullRequest = await gitClient.GetPullRequestByIdAsync(pullRequestId);
-
-            await gitClient.CreatePullRequestStatusAsync(pullRequestStatus, gitRepository.Id.ToString(), pullRequestId);
+            await GitClient.CreatePullRequestStatusAsync(pullRequestStatus, repositoryId, pullRequestId);
         }
+        private async void CheckPullRequestFilesEncoding(string repositoryId, int pullRequestId)
+        {
+            GitPullRequest pullRequest = await GitClient.GetPullRequestByIdAsync(pullRequestId);
+            GitCommitRef commitRef = pullRequest.LastMergeSourceCommit;
+
+
+            List<GitPullRequestIteration> iterationList = new List<GitPullRequestIteration>();
+            if(pullRequest.SupportsIterations)
+            {
+                iterationList = await GitClient.GetPullRequestIterationsAsync(repositoryId, pullRequestId);
+            }
+
+            List<GitCommitRef> commitRefList = await GitClient.GetPullRequestIterationCommitsAsync(repositoryId, pullRequestId, 1);
+
+            //gitClient.GetItemsAsync
+            
+
+
+
+        }
+
 
     }
 }
