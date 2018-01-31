@@ -21,6 +21,7 @@ namespace PullRequestListener.web.Controllers
     public class EncodingCheckController : ApiController
     {
         private string CollectionUrl = ConfigurationManager.AppSettings["CollectionUrl"].ToString();
+        private string VstsAuthenticationToken = ConfigurationManager.AppSettings["VstsAuthenticationToken"].ToString();
         private string AuthenticationToken = ConfigurationManager.AppSettings["AuthenticationToken"].ToString();
         private GitHttpClient gitHttpClient;
         private GitHttpClient GitClient
@@ -29,7 +30,7 @@ namespace PullRequestListener.web.Controllers
             {
                 if (gitHttpClient == null)
                 {
-                    VssConnection connection = new VssConnection(new Uri(CollectionUrl), new VssBasicCredential("", AuthenticationToken));
+                    VssConnection connection = new VssConnection(new Uri(CollectionUrl), new VssBasicCredential("", VstsAuthenticationToken));
                     gitHttpClient = connection.GetClient<GitHttpClient>();
                 }
                 return gitHttpClient;
@@ -38,6 +39,12 @@ namespace PullRequestListener.web.Controllers
 
         public HttpResponseMessage Post()
         {
+            var token = Request.Headers.Authorization;
+            if(token.Scheme.ToLower() != "basic" || Encoding.UTF8.GetString(Convert.FromBase64String(token.Parameter)) != AuthenticationToken)
+            {
+                return Request.CreateResponse(HttpStatusCode.Unauthorized, "Unauthorized");
+            }
+
             string requestContent = Request.Content.ReadAsStringAsync().Result;
 
             var request = JsonParser.Deserialize(requestContent);
