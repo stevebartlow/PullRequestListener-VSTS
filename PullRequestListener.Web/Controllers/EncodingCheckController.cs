@@ -99,10 +99,10 @@ namespace PullRequestListener.web.Controllers
                 List<GitCommitRef> commitRefList = await GitClient.GetPullRequestIterationCommitsAsync(repositoryId, pullRequestId, iterationList.Max(i => i.Id).Value);
                 List<GitItem> itemsToCheck = new List<GitItem>();
                 List<GitItem> failedItems = new List<GitItem>();
-                foreach (GitCommitRef commitRef in commitRefList)
+                foreach (GitCommitRef commitRef in commitRefList.OrderByDescending(r => r.Author.Date))
                 {
                     GitCommitChanges gitCommitChanges = await GitClient.GetChangesAsync(commitRef.CommitId, Guid.Parse(repositoryId));
-                    itemsToCheck.AddRange(gitCommitChanges.Changes.Select(c => c.Item).Where(i => !i.IsFolder));
+                    itemsToCheck.AddRange(gitCommitChanges.Changes.Select(c => c.Item).Where(i => !i.IsFolder).Where(i => !itemsToCheck.Select(f => f.Path).Contains(i.Path)));
                 }
 
                 foreach (GitItem item in itemsToCheck)
