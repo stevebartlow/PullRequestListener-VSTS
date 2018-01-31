@@ -30,12 +30,9 @@ namespace PullRequestListener.web.Controllers
                 if (gitHttpClient == null)
                 {
                     VssConnection connection = new VssConnection(new Uri(CollectionUrl), new VssBasicCredential("", AuthenticationToken));
-                    return connection.GetClient<GitHttpClient>();
+                    gitHttpClient = connection.GetClient<GitHttpClient>();
                 }
-                else
-                {
-                    return gitHttpClient;
-                }
+                return gitHttpClient;
             }
         }
 
@@ -154,7 +151,14 @@ namespace PullRequestListener.web.Controllers
             }
             finally
             {
-                await GitClient.CreatePullRequestStatusAsync(pullRequestStatus, repositoryId, pullRequestId);
+                try
+                {
+                    await GitClient.CreatePullRequestStatusAsync(pullRequestStatus, repositoryId, pullRequestId);
+                }
+                catch
+                {
+                    //If this fails, then all is lost
+                }
             }
         }
 
