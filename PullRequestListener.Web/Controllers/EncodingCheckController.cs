@@ -1,4 +1,4 @@
-﻿using Json;
+using Json;
 using Microsoft.TeamFoundation.SourceControl.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi;
@@ -137,7 +137,7 @@ namespace PullRequestListener.web.Controllers
                     pullRequestStatus.Description = "Encoding Check Failed";
 
                     string Message = $"The following files do not have the correct encoding: {Environment.NewLine}";
-                    Message += failedItems.Select(f => f.Path).Aggregate((i, j) => $" -{i}{Environment.NewLine}{j}");
+                    Message += failedItems.Select(f => f.Path).Aggregate((i, j) => $"{i}{Environment.NewLine}{j}");
 
 
                     pullRequestCommentThread.Comments.Add(new Comment { Content = Message, CommentType = CommentType.System, ParentCommentId = 0 });
