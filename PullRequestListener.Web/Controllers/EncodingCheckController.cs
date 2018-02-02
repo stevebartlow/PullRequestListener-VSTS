@@ -23,6 +23,7 @@ namespace PullRequestListener.web.Controllers
         private string CollectionUrl = ConfigurationManager.AppSettings["CollectionUrl"].ToString();
         private string VstsAuthenticationToken = ConfigurationManager.AppSettings["VstsAuthenticationToken"].ToString();
         private string AuthenticationToken = ConfigurationManager.AppSettings["AuthenticationToken"].ToString();
+        private List<string> extensionBlackList = ConfigurationManager.AppSettings["ExtensionBlackList"].ToString().Split(',').ToList<string>();
         private GitHttpClient gitHttpClient;
         private GitHttpClient GitClient
         {
@@ -109,7 +110,10 @@ namespace PullRequestListener.web.Controllers
                 foreach (GitCommitRef commitRef in commitRefList.OrderByDescending(r => r.Author.Date))
                 {
                     GitCommitChanges gitCommitChanges = await GitClient.GetChangesAsync(commitRef.CommitId, Guid.Parse(repositoryId));
-                    itemsToCheck.AddRange(gitCommitChanges.Changes.Select(c => c.Item).Where(i => !i.IsFolder).Where(i => !itemsToCheck.Select(f => f.Path).Contains(i.Path)));
+                    itemsToCheck.AddRange(gitCommitChanges.Changes
+                        .Where(i => i.ChangeType != VersionControlChangeType.Delete)
+                        .Select(c => c.Item).Where(i => !i.IsFolder)
+                        .Where(i => !itemsToCheck.Select(f => f.Path).Contains(i.Path)));
                 }
 
                 foreach (GitItem item in itemsToCheck)
@@ -121,11 +125,14 @@ namespace PullRequestListener.web.Controllers
                         VersionOptions = GitVersionOptions.None
                     };
 
-                    using (Stream itemStream = await GitClient.GetItemContentAsync(Guid.Parse(repositoryId), item.Path, versionDescriptor: versionDescriptor))
+                    if (!extensionBlackList.Select(s => s.ToLower()).Contains(Path.GetExtension(item.Path).Substring(1).ToLower()))
                     {
-                        if (!Encoding.UTF8.IsOfEncoding(itemStream, false))
+                        using (Stream itemStream = await GitClient.GetItemContentAsync(Guid.Parse(repositoryId), item.Path, versionDescriptor: versionDescriptor))
                         {
-                            failedItems.Add(item);
+                            if (!Encoding.UTF8.IsOfEncoding(itemStream, false))
+                            {
+                                failedItems.Add(item);
+                            }
                         }
                     }
                 }
