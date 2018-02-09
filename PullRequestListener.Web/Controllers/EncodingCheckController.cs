@@ -159,9 +159,13 @@ namespace PullRequestListener.web.Controllers
                     pullRequestStatus.State = GitStatusState.Failed;
                     pullRequestStatus.Description = "Encoding Check Failed";
 
-                    string Message = $"The following files do not have the correct encoding: {Environment.NewLine}";
-                    Message += failedItems.Select(f => f.Path).Aggregate((i, j) => $"{i}{Environment.NewLine}{j}");
-
+                    string Message = $"## The following files do not have the correct encoding {Environment.NewLine}";
+                    Message += $"File Name | Commit Id {Environment.NewLine}";
+                    Message += $":----|:----{Environment.NewLine}";
+                    foreach(GitItem failedItem in failedItems)
+                    {
+                        Message += $"{failedItem.Path}|{failedItem.CommitId} {Environment.NewLine}";
+                    }
 
                     pullRequestCommentThread.Comments.Add(new Comment { Content = Message, CommentType = CommentType.System, ParentCommentId = 0 });
                     await GitClient.CreateThreadAsync(pullRequestCommentThread, repositoryId, pullRequestId);
