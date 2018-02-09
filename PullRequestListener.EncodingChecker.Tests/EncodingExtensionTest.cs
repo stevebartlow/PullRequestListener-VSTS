@@ -52,6 +52,13 @@ namespace PullRequestListener.EncodingChecker.Tests
             compare.Should().BeTrue();
         }
         [TestMethod]
+        [Ignore("This doesn't work yet")]
+        public void PassUTF32UnicodeFile()
+        {
+            bool compare = Encoding.GetEncoding("utf-32").IsOfEncoding(GetResource("PullRequestListener.EncodingChecker.Tests.TestFiles.UTF-32 with Unicode.txt"), false);
+            compare.Should().BeTrue();
+        }
+        [TestMethod]
         public void PassUTF16BEAsUTF16LEFile() //UTF-16 LE and BE are effectively the same, and will be recognized as such
         {
             bool compare = Encoding.GetEncoding("utf-16").IsOfEncoding(GetResource("PullRequestListener.EncodingChecker.Tests.TestFiles.UTF-16 BE BOM.txt"), true);

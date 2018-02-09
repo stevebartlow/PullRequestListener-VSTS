@@ -34,7 +34,7 @@ namespace PullRequestListener.EncodingChecker
                     {
                         throw new Exception("ACSII does not have a Byte Order Mark (BOM)");
                     }
-                    if (HasByteOrderMark(headerBytes) == !ByteOrderMarkAllowed)
+                    if (HasByteOrderMark(headerBytes) == !ByteOrderMarkAllowed.Value)
                     {
                         return false;
                     }
@@ -43,16 +43,12 @@ namespace PullRequestListener.EncodingChecker
                 originalBytes = headerBytes.Concat(originalStream.ToArray()).ToArray();
             }
 
-            foreach (EncodingInfo comparisonEncodingInfo in Encoding.GetEncodings())
+            Encoding comparisonEncoding = encoding;
+            comparisonBytes = Encoding.Convert(encoding, comparisonEncoding, originalBytes);
+            if (Enumerable.SequenceEqual(originalBytes, comparisonBytes)
+                && encoding == comparisonEncoding)
             {
-                Encoding comparisonEncoding = comparisonEncodingInfo.GetEncoding();
-
-                comparisonBytes = Encoding.Convert(encoding, comparisonEncoding, originalBytes);
-                if (Enumerable.SequenceEqual(originalBytes, comparisonBytes)
-                    && encoding == comparisonEncoding)
-                {
-                    return true;
-                }
+                return true;
             }
             return false;
         }
