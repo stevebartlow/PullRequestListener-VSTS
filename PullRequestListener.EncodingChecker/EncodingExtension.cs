@@ -34,9 +34,13 @@ namespace PullRequestListener.EncodingChecker
                     {
                         throw new Exception("ACSII does not have a Byte Order Mark (BOM)");
                     }
-                    if (HasByteOrderMark(headerBytes) == !ByteOrderMarkAllowed)
+                    if (HasByteOrderMark(headerBytes) == !ByteOrderMarkAllowed.Value)
                     {
                         return false;
+                    }
+                    else if(!ByteOrderMarkAllowed.Value)
+                    {
+                        return true;
                     }
                 }
                 stream.CopyTo(originalStream);
