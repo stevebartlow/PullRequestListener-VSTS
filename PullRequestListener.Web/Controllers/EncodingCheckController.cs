@@ -107,15 +107,32 @@ namespace PullRequestListener.web.Controllers
                 List<GitCommitRef> commitRefList = await GitClient.GetPullRequestIterationCommitsAsync(repositoryId, pullRequestId, iterationList.Max(i => i.Id).Value);
                 List<GitItem> itemsToCheck = new List<GitItem>();
                 List<GitItem> failedItems = new List<GitItem>();
+                List<GitChange> renamedChanges = new List<GitChange>();
                 foreach (GitCommitRef commitRef in commitRefList.OrderByDescending(r => r.Author.Date))
                 {
                     GitCommitChanges gitCommitChanges = await GitClient.GetChangesAsync(commitRef.CommitId, Guid.Parse(repositoryId));
+
+                    renamedChanges.AddRange(gitCommitChanges.Changes
+                        .Where(i => i.ChangeType == VersionControlChangeType.Rename));
+
                     itemsToCheck.AddRange(gitCommitChanges.Changes
                         .Where(i => i.ChangeType != VersionControlChangeType.Delete)
+                        .Where(i => i.ChangeType != (VersionControlChangeType.Delete | VersionControlChangeType.SourceRename))
                         .Select(c => c.Item).Where(i => !i.IsFolder)
                         .Where(i => !itemsToCheck.Select(f => f.Path).Contains(i.Path)));
                 }
+                
+                //Clean out renamed items from the list of items to check
+                foreach (GitChange change in renamedChanges)
+                {
 
+                    var matches = itemsToCheck.Where(i => i.Path == change.SourceServerItem).ToList();
+                    foreach (GitItem remove in matches)
+                    {
+                        itemsToCheck.Remove(remove);
+                    }
+                }
+                
                 foreach (GitItem item in itemsToCheck)
                 {
                     GitVersionDescriptor versionDescriptor = new GitVersionDescriptor()
@@ -136,8 +153,7 @@ namespace PullRequestListener.web.Controllers
                         }
                     }
                 }
-
-
+                
                 if (failedItems.Count > 0)
                 {
                     pullRequestStatus.State = GitStatusState.Failed;
@@ -162,6 +178,7 @@ namespace PullRequestListener.web.Controllers
                 pullRequestStatus.State = GitStatusState.Failed;
                 pullRequestStatus.Description = "Encoding Check Failure";
                 pullRequestCommentThread.Comments.Add(new Comment { Content = "Encoding Validation Failed: " + ex.Message, CommentType = CommentType.System, ParentCommentId = 0 });
+                await GitClient.CreateThreadAsync(pullRequestCommentThread, repositoryId, pullRequestId);
             }
             finally
             {
